@@ -1,7 +1,7 @@
 This folder contains the source code for Homework 3.
 
-- `hw3a.py`_: skeleton code for problem a.
-- `hw3b.py`_: skeleton code for problem b.
+- `hw3a.py`_: code for problem a.
+- `hw3b.py`_: code for problem b.
 - `hw3_nn.py`_: implementation of some basic neural network components.
 - `hw3_utils.py`_: utility functions.
 - `hw3.ipynb`_: Jupyter notebook file.
