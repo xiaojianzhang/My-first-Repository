@@ -106,16 +106,19 @@ def E_step(Possessions, Players, global_parameter, transition_matrix):
 		ball_locations = Possessions[k].ball_location          #shape=[num_seq,2]
 		offensive_players = Possessions[k].offensive_players   #shape=[5,]
 		
-		
-		offense_Gammas = [Players[offensive_players[i]].Gammas for i in range(5)]
+		if isinstance(Players, dict):
+			offense_Gammas = [Players[offensive_players[i]].Gammas for i in range(5)]
+		elif isinstance(Players, Player):  #Players is just one Player object, i.e., we are using player independent Gammas
+			offense_Gammas = Players.Gammas
+			
 		mean_location_matrix = mean_location_poss(offense_locations, ball_locations, offense_Gammas) #matrix, shape=(5, num_seq, 2)
 
-		likelihood_matrix = likelihood_matrix(mean_location_matrix, defense_locations, global_parameter.sigma_square) #shape=[5, num_seq, 5]
+		llh_matrix = likelihood_matrix(mean_location_matrix, defense_locations, global_parameter.sigma_square) #shape=[5, num_seq, 5]
 		Possessions[k].mean_location_matrix = mean_location_matrix #matrix, shape=(5, num_seq, 2)
 		
 		init_hidden_state_dist = init_matchup_dist(Possessions[k].E_hidden_state_list)
 		E_hidden_state_list, E_two_hidden_states_product_list, sampling_matchups_matrix, log_likelihood, log_llh_given_I \
-			= forward_backward_rescaled_sampling(likelihood_matrix, init_hidden_state_dist, transition_matrix)
+			= forward_backward_rescaled_sampling(llh_matrix, init_hidden_state_dist, transition_matrix)
 		
 		Possessions[k].sampling_matchups_matrix = sampling_matchups_matrix
 		Possessions[k].E_hidden_state_list = E_hidden_state_list
@@ -204,7 +207,11 @@ def E_step_bonds(Possessions, Players, global_parameter,trans_prob_list):
 
 		initial_state_dist = init_matchup_dist_bonds(global_parameter.energy_params, ball_states[0])
 
-		offense_Gammas = [Players[offensive_players[i]].Gammas for i in range(5)]
+		if isinstance(Players, dict):
+			offense_Gammas = [Players[offensive_players[i]].Gammas for i in range(5)]
+		elif isinstance(Players, Player):  #Players is just one Player object, i.e., we are using player independent Gammas
+			offense_Gammas = Players.Gammas
+
 		mean_location_matrix = mean_location_poss(off_location, ball_location, offense_Gammas) #shape=(5, N, 2)
 		Possessions[k].mean_location_matrix = mean_location_matrix
 		

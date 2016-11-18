@@ -11,7 +11,9 @@ import numpy
 import multiprocessing
 import scipy
 from scikits.sparse import cholmod
-from utils import grid_location, grid_num_x_y, grid_cell_centers
+import itertools
+import random
+from utils import grid_location, grid_num_x_y, grid_cell_centers, find_player_possessions
 
 X_LIM, Y_LIM = 47, 50
 GRID_SIZE = 2
@@ -39,7 +41,7 @@ def Calculate_W_V(Possessions, Players):
 			index = possession.offensive_players.index(player_id)
 			off_location = possession.offensive_locations[index]
 			ball_location = possession.ball_location
-			matchups_list = possession.sampling_hidden_states_list
+			matchups_matrix = possession.sampling_matchups_matrix
 			def_location = possession.defensive_locations
 			num_seq = ball_location.shape[0]
 			for i in range(num_seq):
@@ -47,7 +49,7 @@ def Calculate_W_V(Possessions, Players):
 				Z = numpy.vstack((off_location[i], ball_location[i], hoop_location))
 
 				for j in range(5):
-					if matchups_list[i][j] == index:
+					if matchups_matrix[i,j] == index:
 						W[grid_loc] += numpy.dot(Z, Z.T)
 						d = def_location[j, i, :]
 						V[grid_loc] += numpy.dot(Z, d)
@@ -59,19 +61,6 @@ def Calculate_W_V(Possessions, Players):
 		
 	
 	return Players
-
-def find_player_possessions(Possessions):
-
-	player_poss_dict = {}
-	for i,poss in enumerate(Possessions):
-		offensive_players = Possessions[i].offensive_players
-		for player_id in offensive_players:
-			if player_id not in player_poss_dict.keys():
-				player_poss_dict[player_id]=[i]
-			else:
-				player_poss_dict[player_id].append(i)
-
-	return player_poss_dict
 
 def update_player_Gamma(Player, Gammas_sample):
 	Gammas_dict = Player.Gammas

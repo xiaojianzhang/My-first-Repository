@@ -9,7 +9,9 @@ Module containing all utility functions
 import numpy
 import multiprocessing
 import scipy
-import itertools 
+import itertools
+
+from energy_bonds import  
 
 season_year = "2015-2016"
 X_LIM, Y_LIM = 47, 50
@@ -20,7 +22,7 @@ def compute_distance_square(Possessions):
 
 	distance_square = 0
 	num_datapoints = 0
-	for possession in Possessions:
+	for Possession in Possessions:
 		mean_location_matrix = Possession.mean_location_matrix
 		defense_locations = Possession.defensive_locations
 		sampling_hidden_states = Possession.sampling_matchups_matrix
@@ -132,13 +134,23 @@ def mean_location_poss(off_locations, ball_locations, offense_Gammas):
 					X = numpy.stack((offense_location, ball_locations[i], hoop_location), axis=1) #X=[2 by 3 matrix]
 					mean_location[j,i,:] = numpy.dot(X, Gamma)
 
-	elif isinstance(offense_Gammas, numpy.ndarray): #if offense_Gammas is an 3 by 1 array, that means we are using one Gammas over players and court.
-		Gamma = offense_Gammas
-		for i in range(num_seq): 		 			#for each sequence in that possession
-			for j in range(5): 			 			#for each offensive player
-				offense_location = off_locations[j,i,:]
-				X = numpy.stack((offense_location, ball_locations[i], hoop_location), axis=1) #X=[2 by 3 matrix]
-				mean_location[j,i,:] = numpy.dot(X, Gamma)
+	else #if offense_Gammas is not a list, that means we are using player independent Gammas
+		if isinstance(offense_Gammas, dict): #if offense_Gammas is a dictionary, that means we are using grid dependent Gammas
+			for i in range(num_seq): 		 	#for each sequence in that possession
+				for j in range(5): 			 	#for each offensive player
+					offense_location = off_locations[j,i,:]
+					grid_loc = grid_location(offense_location)  	#grid_location at that moment e.g., (4,5)
+					Gamma = offense_Gammas[grid_loc]                #player_Gamma[(4,5)], array
+					X = numpy.stack((offense_location, ball_locations[i], hoop_location), axis=1) #X=[2 by 3 matrix]
+					mean_location[j,i,:] = numpy.dot(X, Gamma)
+
+		elif isinstance(offense_Gammas, numpy.ndarray): #if offense_Gammas is an 3 by 1 array, that means we are using grid independent Gammas.
+			Gamma = offense_Gammas
+			for i in range(num_seq): 		 			#for each sequence in that possession
+				for j in range(5): 			 			#for each offensive player
+					offense_location = off_locations[j,i,:]
+					X = numpy.stack((offense_location, ball_locations[i], hoop_location), axis=1) #X=[2 by 3 matrix]
+					mean_location[j,i,:] = numpy.dot(X, Gamma)
 
 	return mean_location #matrix, shape=(5, num_seq, 2)
 
@@ -327,6 +339,48 @@ def rho_update(Possessions):
 	rho_new = Q/(1+Q)
 
 	return rho_new
+
+def find_player_possessions(Possessions):
+
+	player_poss_dict = {}
+	for i,poss in enumerate(Possessions):
+		offensive_players = Possessions[i].offensive_players
+		for player_id in offensive_players:
+			if player_id not in player_poss_dict.keys():
+				player_poss_dict[player_id]=[i]
+			else:
+				player_poss_dict[player_id].append(i)
+
+	return player_poss_dict
+
+def data_partition(Possessions, part_ratio):
+
+	import random
+
+	Possessions_training=[]
+	Possessions_testing = []
+
+	Total_num_poss = len(Possessions)
+
+	test_data_index = random.sample(range(Total_num_poss), int(part_ratio*Total_num_poss))
+
+	for i in range(Total_num_poss):
+
+		if i in test_data_index:
+			Possessions_testing.append(Possessions[i])
+
+		else:
+			Possessions_training.append(Possessions[i])
+
+
+	return Possessions_training, Possessions_testing 
+
+def count_datpoint(Possessions):
+	num_datapoints=0
+	for i in range(len(Possessions)):
+		num_datapoints += Possessions[i].ball_location.shape[0]
+
+	return num_datapoints
 
 if __name__ == "__main__":
 	pass

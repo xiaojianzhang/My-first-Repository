@@ -11,6 +11,9 @@ import scipy
 import pdb
 from utils import grid_num_x_y, parallel_update_sigma_square, rho_update
 from energy_bonds import fista_algorithm
+X_LIM, Y_LIM = 47, 50
+GRID_SIZE = 2
+hoop_location = numpy.array([5.25, 25.0])
 # ============================================================================
 #  Possession Class: stores necessary information of one possession over
 # 					 a game.
@@ -53,7 +56,7 @@ class Player:
 
 		if grid_dependent == True:       #if we are using grid dependent Gammas
 			if player_Gammas==None:
-				num_grids_x, num_grids_y = grid_num_x_y()
+				num_grids_x, num_grids_y = grid_num_x_y(X_LIM, Y_LIM, GRID_SIZE)
 				self.Gammas = {}
 				for i in range(num_grids_x):
 					for j in range(num_grids_y):
@@ -70,7 +73,7 @@ class Player:
 	def make_sparse_diagnal_W(self):
 		from scipy.sparse import block_diag
 
-		num_grids_x, num_grids_y = grid_num_x_y()
+		num_grids_x, num_grids_y = grid_num_x_y(X_LIM, Y_LIM, GRID_SIZE)
 		diag_sparse= []
 		for i in range(num_grids_x):
 			for j in range(num_grids_y):
@@ -84,7 +87,7 @@ class Player:
 	
 	def stack_V(self):
 		
-		num_grids_x, num_grids_y = grid_num_x_y()
+		num_grids_x, num_grids_y = grid_num_x_y(X_LIM, Y_LIM, GRID_SIZE)
 		stack_vs = numpy.asarray([])
 		for i in range(num_grids_x):
 			for j in range(num_grids_y):
